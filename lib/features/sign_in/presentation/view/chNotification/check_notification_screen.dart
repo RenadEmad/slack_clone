@@ -61,7 +61,9 @@ class CheckNotificationScreen extends StatelessWidget {
               Column(
                 children: [
                   ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      context.go(Routes.homeScreen);
+                    },
                     style: ElevatedButton.styleFrom(
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),

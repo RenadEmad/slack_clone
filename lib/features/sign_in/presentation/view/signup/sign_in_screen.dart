@@ -1,6 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:slack_clone/core/constants/app_colors.dart';
 import 'package:slack_clone/core/constants/app_strings.dart';
 import 'package:slack_clone/core/constants/app_text_style.dart';
@@ -9,6 +11,24 @@ import 'package:slack_clone/sharedConfig/routes/app_routes.dart';
 
 class SignInScreen extends StatelessWidget {
   const SignInScreen({super.key});
+
+  Future<UserCredential> signInWithGoogle() async {
+    // Trigger the authentication flow
+    final GoogleSignInAccount? googleUser = await GoogleSignIn().signIn();
+
+    // Obtain the auth details from the request
+    final GoogleSignInAuthentication? googleAuth =
+        await googleUser?.authentication;
+
+    // Create a new credential
+    final credential = GoogleAuthProvider.credential(
+      accessToken: googleAuth?.accessToken,
+      idToken: googleAuth?.idToken,
+    );
+
+    // Once signed in, return the UserCredential
+    return await FirebaseAuth.instance.signInWithCredential(credential);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -90,8 +110,7 @@ class SignInScreen extends StatelessWidget {
                 const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: () {
-                                          context.go(Routes.checkEmail);
-
+                    context.go(Routes.checkEmail);
                   },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xffe2e2e2),
@@ -102,7 +121,7 @@ class SignInScreen extends StatelessWidget {
                     elevation: 0,
                   ),
                   child: const Text(
-                    'Sign in',
+                    'Sign inn',
                     style: TextStyle(
                       color: Color(0xff5e5e5e),
                       fontFamily: 'SignikaNegative',
@@ -133,7 +152,9 @@ class SignInScreen extends StatelessWidget {
                   ),
                 ),
                 ElevatedButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    signInWithGoogle();
+                  },
                   style: ElevatedButton.styleFrom(
                     elevation: 0,
                     backgroundColor: Colors.white,
