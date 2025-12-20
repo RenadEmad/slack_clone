@@ -1,14 +1,19 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:slack_clone/firebase_options.dart';
-// import 'package:slack_clone/core/constants/app_text_style.dart';
 import 'package:slack_clone/sharedConfig/routes/app_routes.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const MyApp());
+    WidgetsFlutterBinding.ensureInitialized();
+
+  await Supabase.initialize(
+    url: 'https://lefjwsixkkojulrpvgdy.supabase.co',
+    anonKey: 'sb_publishable_rmXp62eXCRGlfX7WXRtjvA_rEkwjXNB',
+  );
 }
+
+
+final supabase = Supabase.instance.client;
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
