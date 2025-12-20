@@ -8,6 +8,7 @@ import 'package:slack_clone/features/homeScreen/presentation/widget/icon_tile.da
 import 'package:slack_clone/features/homeScreen/presentation/widget/tagged_row.dart';
 import 'package:slack_clone/features/homeScreen/presentation/widget/username_icon.dart';
 import 'package:slack_clone/features/search/presentation/search_screen.dart';
+import 'package:slack_clone/main.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -18,111 +19,151 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int currentPageIndex = 0;
+  String username = '';
+  bool isOnline = false;
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    fetchUserProfile();
+  }
+
+  Future<void> fetchUserProfile() async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final response = await supabase
+          .from('profiles')
+          .select()
+          .eq('user_id', user.id)
+          .single();
+
+      setState(() {
+        username = response['username'] ?? '';
+        isOnline = response['is_online'] ?? false;
+        isLoading = false;
+      });
+    } catch (e) {
+      print('Error fetching profile: $e');
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
 
     final List<Widget> pages = [
-      SingleChildScrollView(
-        padding: const EdgeInsets.all(12),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(height: 20),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: Row(
+      isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  IconTile(
-                    icon: Icons.bookmark_outline_rounded,
-                    title1: 'Later',
-                    title2: '.items',
-                    onTap: () {},
-                  ),
-                  IconTile(
-                    icon: Icons.drafts_outlined,
-                    title1: 'Drafts & Sent',
-                    title2: '.drafts',
-                    onTap: () {},
-                  ),
-                  IconTile(
-                    icon: Icons.headset_outlined,
-                    title1: 'Huddles',
-                    title2: '.live',
-                    onTap: () {},
-                  ),
-                  const SizedBox(width: 12),
-                  Container(
-                    width: 70,
-                    height: 70,
-                    margin: const EdgeInsets.only(right: 12),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.grey, width: 0.5),
+                  Text('Hello, $username'),
+                  Text('Status: ${isOnline ? "Online" : "Offline"}'),
+                  SizedBox(height: 20),
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
                     ),
-                    child: InkWell(
-                      onTap: () {},
-                      customBorder: const CircleBorder(),
-                      child: const Center(
-                        child: Icon(
-                          Icons.settings,
-                          size: 28,
-                          color: Colors.black,
+                    child: Row(
+                      children: [
+                        IconTile(
+                          icon: Icons.bookmark_outline_rounded,
+                          title1: 'Later',
+                          title2: '.items',
+                          onTap: () {},
                         ),
-                      ),
+                        IconTile(
+                          icon: Icons.drafts_outlined,
+                          title1: 'Drafts & Sent',
+                          title2: '.drafts',
+                          onTap: () {},
+                        ),
+                        IconTile(
+                          icon: Icons.headset_outlined,
+                          title1: 'Huddles',
+                          title2: '.live',
+                          onTap: () {},
+                        ),
+                        const SizedBox(width: 12),
+                        Container(
+                          width: 70,
+                          height: 70,
+                          margin: const EdgeInsets.only(right: 12),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.grey, width: 0.5),
+                          ),
+                          child: InkWell(
+                            onTap: () {},
+                            customBorder: const CircleBorder(),
+                            child: const Center(
+                              child: Icon(
+                                Icons.settings,
+                                size: 28,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
+                  ),
+                  const SizedBox(height: 12),
+                  const Divider(color: Color(0xffcacaca), thickness: 0.5),
+                  const SizedBox(height: 8),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      TaggedRow(
+                        icon: Icons.tag_outlined,
+                        text: 'Channels',
+                        onTap: () {},
+                        showDownArrow: true,
+                      ),
+                      const SizedBox(height: 10),
+                      const Divider(color: Color(0xffcacaca), thickness: 0.5),
+                      TaggedRow(
+                        icon: Icons.chat_bubble_outline,
+                        text: 'Direct messages',
+                        onTap: () {},
+                        showDownArrow: true,
+                      ),
+                      const SizedBox(height: 10),
+                      const Divider(color: Color(0xffcacaca), thickness: 0.5),
+                      TaggedRow(
+                        icon: Icons.menu,
+                        text: 'Recent apps',
+                        onTap: () {},
+                        showDownArrow: true,
+                        children: const [
+                          Text('General'),
+                          Text('Random'),
+                          Text('Flutter'),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      const Divider(color: Color(0xffcacaca), thickness: 0.5),
+                      TaggedRow(
+                        icon: Icons.add,
+                        text: 'Add teammates',
+                        onTap: () {},
+                        showDownArrow: false,
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 12),
-            const Divider(color: Color(0xffcacaca), thickness: 0.5),
-            const SizedBox(height: 8),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                TaggedRow(
-                  icon: Icons.tag_outlined,
-                  text: 'Channels',
-                  onTap: () {},
-                  showDownArrow: true,
-                ),
-                const SizedBox(height: 10),
-                const Divider(color: Color(0xffcacaca), thickness: 0.5),
-                TaggedRow(
-                  icon: Icons.chat_bubble_outline,
-                  text: 'Direct messages',
-                  onTap: () {},
-                  showDownArrow: true,
-                ),
-                const SizedBox(height: 10),
-                const Divider(color: Color(0xffcacaca), thickness: 0.5),
-                TaggedRow(
-                  icon: Icons.menu,
-                  text: 'Recent apps',
-                  onTap: () {},
-                  showDownArrow: true,
-                  children: const [
-                    Text('General'),
-                    Text('Random'),
-                    Text('Flutter'),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                const Divider(color: Color(0xffcacaca), thickness: 0.5),
-                TaggedRow(
-                  icon: Icons.add,
-                  text: 'Add teammates',
-                  onTap: () {},
-                  showDownArrow: false,
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
       const DmsScreen(),
       const ActivityScreen(),
       const SearchScreen(),
@@ -146,7 +187,11 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               Stack(
                 children: [
-                  const UsernameIcon(text: 'Re'),
+                  UsernameIcon(
+                    text: username.isNotEmpty
+                        ? username.substring(0, 2).toUpperCase()
+                        : '??',
+                  ),
                   Positioned(
                     bottom: 0,
                     right: 0,
@@ -154,7 +199,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       width: 10,
                       height: 10,
                       decoration: BoxDecoration(
-                        color: Colors.green,
+                        color: isOnline ? Colors.green : Colors.grey,
                         shape: BoxShape.circle,
                         border: Border.all(color: Colors.white, width: 1.5),
                       ),
@@ -206,11 +251,16 @@ class _HomeScreenState extends State<HomeScreen> {
             Divider(thickness: 0.5),
 
             ListTile(
-              leading: CircleAvatar(child: Text('r')),
-              title: Text('renad'),
-              subtitle: Text('renad-vqn8923.slack.com'),
+              leading: CircleAvatar(
+                child: Text(
+                  username.isNotEmpty ? username[0].toUpperCase() : '?',
+                ),
+              ),
+              title: Text(username),
+              subtitle: Text('Workspace'),
               onTap: () {},
             ),
+
             Divider(thickness: 0.5),
 
             SizedBox(height: 20),

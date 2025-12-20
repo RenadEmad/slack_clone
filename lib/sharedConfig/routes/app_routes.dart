@@ -23,8 +23,8 @@ class Routes {
 }
 
 final appRouter = GoRouter(
-  // initialLocation: Routes.splashScreen,
-  initialLocation: Routes.homeScreen,
+  initialLocation: Routes.splashScreen,
+  // initialLocation: Routes.homeScreen,
   routes: [
     GoRoute(
       path: Routes.splashScreen,
