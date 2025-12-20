@@ -1,101 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:slack_clone/core/constants/app_colors.dart';
-import 'package:slack_clone/core/constants/app_text_style.dart';
+import 'package:slack_clone/features/Activity/presentation/activity_screen.dart';
+import 'package:slack_clone/features/DMs/presentation/dms_screen.dart';
+import 'package:slack_clone/features/homeScreen/presentation/view/chat_screen_view.dart';
 import 'package:slack_clone/features/homeScreen/presentation/widget/app_floating_button.dart';
 import 'package:slack_clone/features/homeScreen/presentation/widget/icon_tile.dart';
 import 'package:slack_clone/features/homeScreen/presentation/widget/tagged_row.dart';
 import 'package:slack_clone/features/homeScreen/presentation/widget/username_icon.dart';
+import 'package:slack_clone/features/search/presentation/search_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int currentPageIndex = 0;
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      floatingActionButton: AppFloatingButton(onTap: () {}),
-      appBar: AppBar(
-        actions: [
-          Row(
-            children: [
-              Stack(
-                children: [
-                  UsernameIcon(text: 'Re'),
+    final ThemeData theme = Theme.of(context);
 
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      width: 10,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        color: Colors.green,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1.5),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(width: 10),
-            ],
-          ),
-        ],
-        backgroundColor: AppColors.splashBackgroundColor,
-        leadingWidth: 400,
-        leading: Padding(
-          padding: const EdgeInsets.only(left: 12),
-          child: Row(
-            children: [
-              UsernameIcon(text: 'Ri'),
-
-              const SizedBox(width: 8),
-              Text(
-                'Renad',
-                style: AppTextTheme.lightTextTheme.headlineSmall!.copyWith(
-                  color: Color.fromARGB(255, 65, 37, 27),
-                  fontSize: 18,
-                ),
-              ),
-              IconButton(
-                onPressed: () {},
-                icon: Icon(
-                  Icons.arrow_drop_down,
-                  color: const Color.fromARGB(255, 65, 37, 27),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-
-      // drawer: Drawer(
-      //   child: ListView(
-      //     padding: EdgeInsets.zero,
-      //     children: [
-      //       SizedBox(height: 20),
-      //       ListTile(
-      //         leading: Icon(Icons.home),
-      //         title: Text('Home'),
-      //         onTap: () => Navigator.pop(context),
-      //       ),
-      //       ListTile(
-      //         leading: Icon(Icons.settings),
-      //         title: Text('Settings'),
-      //         onTap: () => Navigator.pop(context),
-      //       ),
-      //     ],
-      //   ),
-      // ),
-      body: Center(
+    final List<Widget> pages = [
+      SingleChildScrollView(
+        padding: const EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(height: 20),
-
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: Row(
                 children: [
                   IconTile(
@@ -116,19 +53,19 @@ class HomeScreen extends StatelessWidget {
                     title2: '.live',
                     onTap: () {},
                   ),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 12),
                   Container(
                     width: 70,
                     height: 70,
-                    margin: EdgeInsets.only(right: 12),
+                    margin: const EdgeInsets.only(right: 12),
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.grey, width: 0.5),
                     ),
                     child: InkWell(
                       onTap: () {},
-                      customBorder: CircleBorder(),
-                      child: Center(
+                      customBorder: const CircleBorder(),
+                      child: const Center(
                         child: Icon(
                           Icons.settings,
                           size: 28,
@@ -140,11 +77,9 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
             ),
-
-            SizedBox(height: 12),
-            Divider(color: Color(0xffcacaca), thickness: 0.5),
-            SizedBox(height: 8),
-
+            const SizedBox(height: 12),
+            const Divider(color: Color(0xffcacaca), thickness: 0.5),
+            const SizedBox(height: 8),
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -154,38 +89,184 @@ class HomeScreen extends StatelessWidget {
                   onTap: () {},
                   showDownArrow: true,
                 ),
-                SizedBox(height: 10),
-                Divider(color: Color(0xffcacaca), thickness: 0.5),
-
+                const SizedBox(height: 10),
+                const Divider(color: Color(0xffcacaca), thickness: 0.5),
                 TaggedRow(
                   icon: Icons.chat_bubble_outline,
                   text: 'Direct messages',
                   onTap: () {},
                   showDownArrow: true,
                 ),
-                SizedBox(height: 10),
-                Divider(color: Color(0xffcacaca), thickness: 0.5),
-
+                const SizedBox(height: 10),
+                const Divider(color: Color(0xffcacaca), thickness: 0.5),
                 TaggedRow(
                   icon: Icons.menu,
                   text: 'Recent apps',
                   onTap: () {},
                   showDownArrow: true,
+                  children: const [
+                    Text('General'),
+                    Text('Random'),
+                    Text('Flutter'),
+                  ],
                 ),
-                SizedBox(height: 10),
-                Divider(color: Color(0xffcacaca), thickness: 0.5),
-
+                const SizedBox(height: 10),
+                const Divider(color: Color(0xffcacaca), thickness: 0.5),
                 TaggedRow(
                   icon: Icons.add,
                   text: 'Add teammates',
                   onTap: () {},
                   showDownArrow: false,
-                ), 
+                ),
               ],
             ),
           ],
         ),
       ),
+      const DmsScreen(),
+      const ActivityScreen(),
+      const SearchScreen(),
+
+      Center(child: Text('More Page', style: theme.textTheme.headlineMedium)),
+    ];
+
+    return Scaffold(
+      backgroundColor: Colors.white,
+      floatingActionButton: AppFloatingButton(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ChatScreenView()),
+          );
+        },
+      ),
+      appBar: AppBar(
+        actions: [
+          Row(
+            children: [
+              Stack(
+                children: [
+                  const UsernameIcon(text: 'Re'),
+                  Positioned(
+                    bottom: 0,
+                    right: 0,
+                    child: Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: Colors.green,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1.5),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(width: 10),
+            ],
+          ),
+        ],
+        backgroundColor: AppColors.splashBackgroundColor,
+        leadingWidth: 400,
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 12),
+          // child: Row(
+          //   children: const [
+          //     UsernameIcon(text: 'Ri'),
+          //     SizedBox(width: 8),
+          //     Text(
+          //       'Renad',
+          //       style: TextStyle(
+          //         color: Color.fromARGB(255, 65, 37, 27),
+          //         fontSize: 18,
+          //       ),
+          //     ),
+          //   ],
+          // ),
+        ),
+      ),
+
+      drawer: Drawer(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Workspaces',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
+                  ),
+                  TextButton(onPressed: () {}, child: Text('Edit')),
+                ],
+              ),
+            ),
+            Divider(thickness: 0.5),
+
+            ListTile(
+              leading: CircleAvatar(child: Text('r')),
+              title: Text('renad'),
+              subtitle: Text('renad-vqn8923.slack.com'),
+              onTap: () {},
+            ),
+            Divider(thickness: 0.5),
+
+            SizedBox(height: 20),
+
+            ListTile(
+              leading: Icon(Icons.add),
+              title: Text('Add a workspace'),
+              onTap: () {},
+            ),
+            ListTile(
+              leading: Icon(Icons.settings),
+              title: Text('Preferences'),
+              onTap: () {},
+            ),
+            ListTile(
+              leading: Icon(Icons.help_outline),
+              title: Text('Help'),
+              onTap: () {},
+            ),
+          ],
+        ),
+      ),
+
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: currentPageIndex,
+        indicatorColor: Colors.brown.withOpacity(0.7),
+        onDestinationSelected: (int index) {
+          setState(() {
+            currentPageIndex = index;
+          });
+        },
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined, color: Colors.black45),
+            label: 'Home',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.chat_bubble_outline, color: Colors.black45),
+            label: 'DMs',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.notifications_none, color: Colors.black45),
+            label: 'Activity',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.search, color: Colors.black45),
+            label: 'Search',
+          ),
+          // NavigationDestination(
+          //   icon: Icon(Icons.more_horiz, color: Colors.black45),
+          //   label: 'More',
+          // ),
+        ],
+      ),
+
+      body: pages[currentPageIndex],
     );
   }
 }
