@@ -4,11 +4,13 @@ import 'package:slack_clone/features/Activity/presentation/activity_screen.dart'
 import 'package:slack_clone/features/DMs/presentation/dms_screen.dart';
 import 'package:slack_clone/features/homeScreen/presentation/view/chat_screen_view.dart';
 import 'package:slack_clone/features/homeScreen/presentation/widget/app_floating_button.dart';
+import 'package:slack_clone/features/homeScreen/presentation/widget/channel_row.dart';
 import 'package:slack_clone/features/homeScreen/presentation/widget/icon_tile.dart';
 import 'package:slack_clone/features/homeScreen/presentation/widget/tagged_row.dart';
 import 'package:slack_clone/features/homeScreen/presentation/widget/username_icon.dart';
 import 'package:slack_clone/features/search/presentation/search_screen.dart';
 import 'package:slack_clone/main.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -27,6 +29,96 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     fetchUserProfile();
+    setUserOnlineStatus(true);
+  }
+
+  Future<void> setUserOnlineStatus(bool online) async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      await supabase
+          .from('profiles')
+          .update({'is_online': online})
+          .eq('user_id', user.id);
+    } catch (e) {
+      print('Error updating online status: $e');
+    }
+  }
+  /*
+
+@override
+void dispose() {
+  setUserOnlineStatus(false); 
+  super.dispose();
+}
+ */
+
+  // void subscribeToUserStatus() {
+  //   final user = supabase.auth.currentUser;
+  //   if (user == null) return;
+
+  //   supabase
+  //       .from('profiles:user_id=eq.${user.id}')
+  //       .on(SupabaseEventTypes.update, (payload) {
+  //         final updatedData = payload.newRecord;
+  //         setState(() {
+  //           isOnline = updatedData['is_online'] ?? false;
+  //         });
+  //       })
+  //       .subscribe();
+  // }
+
+  Future<void> addChannelToSupabase(String name) async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
+
+    try {
+      await supabase.from('channels').insert({
+        'name': name,
+        'created_by': user.id,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Channel "$name" added!')));
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error adding channel: $e')));
+    }
+  }
+
+  void showAddChannelDialog() {
+    final TextEditingController channelController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('Add Channel'),
+        content: TextField(
+          controller: channelController,
+          decoration: InputDecoration(hintText: 'Channel name'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final name = channelController.text.trim();
+              if (name.isEmpty) return;
+
+              await addChannelToSupabase(name);
+
+              Navigator.pop(context);
+            },
+            child: Text('Add'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> fetchUserProfile() async {
@@ -124,12 +216,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      TaggedRow(
-                        icon: Icons.tag_outlined,
-                        text: 'Channels',
-                        onTap: () {},
-                        showDownArrow: true,
-                      ),
+                     ChannelsRow(),
                       const SizedBox(height: 10),
                       const Divider(color: Color(0xffcacaca), thickness: 0.5),
                       TaggedRow(
