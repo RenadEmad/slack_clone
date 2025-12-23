@@ -270,10 +270,10 @@ void dispose() {
       backgroundColor: Colors.white,
       floatingActionButton: AppFloatingButton(
         onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const ChatScreenView()),
-          );
+          // Navigator.push(
+          //   context,
+          //   MaterialPageRoute(builder: (_) => const ChatScreenView()),
+          // );
         },
       ),
       appBar: AppBar(

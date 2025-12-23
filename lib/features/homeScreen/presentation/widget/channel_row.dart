@@ -1,5 +1,10 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:slack_clone/features/homeScreen/presentation/view/chat_screen_view.dart';
 import 'package:slack_clone/main.dart';
+import 'package:slack_clone/sharedConfig/routes/app_routes.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ChannelsRow extends StatefulWidget {
@@ -122,9 +127,11 @@ class _ChannelsRowState extends State<ChannelsRow> {
         channels.add(response);
       });
     } catch (e) {
+      log('Add channel error: $e');
+
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Error adding channel')));
+      ).showSnackBar(SnackBar(content: Text(e.toString())));
     }
   }
 
@@ -180,7 +187,32 @@ class _ChannelsRowState extends State<ChannelsRow> {
                   ...channels.map(
                     (channel) => Padding(
                       padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: Text('# ${channel['name']}'),
+                      child: InkWell(
+                        onTap: () {
+                          // Navigator.push(
+                          //   context,
+                          //   MaterialPageRoute(
+                          //     builder: (_) => ChatScreenView(
+                          //       channelId: channel['id'],
+                          //       channelName: channel['name'],
+                          //     ),
+                          //   ),
+                          context.push(
+                            Routes.chatScreen,
+                            extra: {
+                              'channelId': channel['id'],
+                              'channelName': channel['name'],
+                            },
+                          );
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 4),
+                          child: Text(
+                            '# ${channel['name']}',
+                            style: const TextStyle(fontSize: 15),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                   TextButton.icon(

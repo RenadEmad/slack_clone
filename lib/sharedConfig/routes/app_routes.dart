@@ -48,10 +48,22 @@ final appRouter = GoRouter(
       path: Routes.homeScreen,
       builder: (context, state) => const HomeScreenView(),
     ),
+    // GoRoute(
+    //   path: Routes.chatScreen,
+    //   builder: (context, state) => const ChatScreenView(),
+    // ),
     GoRoute(
-      path: Routes.chatScreen,
-      builder: (context, state) => const ChatScreenView(),
-    ),
+  path: Routes.chatScreen,
+  builder: (context, state) {
+    final data = state.extra as Map<String, dynamic>;
+
+    return ChatScreenView(
+      channelId: data['channelId'],
+      channelName: data['channelName'],
+    );
+  },
+),
+
     GoRoute(
       path: Routes.dmsScreen,
       builder: (context, state) => const DmsScreenView(),
