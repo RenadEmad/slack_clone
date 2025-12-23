@@ -3,6 +3,7 @@ import 'package:slack_clone/core/constants/app_colors.dart';
 import 'package:slack_clone/features/Activity/presentation/activity_screen.dart';
 import 'package:slack_clone/features/DMs/presentation/dms_screen.dart';
 import 'package:slack_clone/features/homeScreen/presentation/view/chat_screen_view.dart';
+import 'package:slack_clone/features/homeScreen/presentation/view/later_screen_view.dart';
 import 'package:slack_clone/features/homeScreen/presentation/widget/app_floating_button.dart';
 import 'package:slack_clone/features/homeScreen/presentation/widget/channel_row.dart';
 import 'package:slack_clone/features/homeScreen/presentation/widget/icon_tile.dart';
@@ -172,7 +173,14 @@ void dispose() {
                           icon: Icons.bookmark_outline_rounded,
                           title1: 'Later',
                           title2: '.items',
-                          onTap: () {},
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const LaterScreenView(),
+                              ),
+                            );
+                          },
                         ),
                         IconTile(
                           icon: Icons.drafts_outlined,
@@ -216,7 +224,7 @@ void dispose() {
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                     ChannelsRow(),
+                      ChannelsRow(),
                       const SizedBox(height: 10),
                       const Divider(color: Color(0xffcacaca), thickness: 0.5),
                       TaggedRow(

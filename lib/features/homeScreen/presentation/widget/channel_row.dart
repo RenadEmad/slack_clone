@@ -12,7 +12,7 @@ class ChannelsRow extends StatefulWidget {
 class _ChannelsRowState extends State<ChannelsRow> {
   List<Map<String, dynamic>> channels = [];
   bool isExpanded = false;
-late RealtimeChannel channelsSubscription;
+  late RealtimeChannel channelsSubscription;
 
   @override
   void initState() {
@@ -23,7 +23,10 @@ late RealtimeChannel channelsSubscription;
 
   Future<void> fetchChannels() async {
     try {
-      final response = await supabase.from('channels').select().order('created_at');
+      final response = await supabase
+          .from('channels')
+          .select()
+          .order('created_at');
       setState(() {
         channels = List<Map<String, dynamic>>.from(response);
       });
@@ -33,26 +36,26 @@ late RealtimeChannel channelsSubscription;
   }
 
   void subscribeToChannels() {
-  channelsSubscription = supabase
-      .channel('public:channels')
-      .onPostgresChanges(
-        event: PostgresChangeEvent.insert,
-        schema: 'public',
-        table: 'channels',
-        callback: (payload) {
-          setState(() {
-            channels.add(payload.newRecord);
-          });
-        },
-      )
-      .subscribe();
-}
-@override
-void dispose() {
-  supabase.removeChannel(channelsSubscription);
-  super.dispose();
-}
+    channelsSubscription = supabase
+        .channel('public:channels')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'channels',
+          callback: (payload) {
+            setState(() {
+              channels.add(payload.newRecord);
+            });
+          },
+        )
+        .subscribe();
+  }
 
+  @override
+  void dispose() {
+    supabase.removeChannel(channelsSubscription);
+    super.dispose();
+  }
 
   void showAddChannelDialog() {
     final TextEditingController channelController = TextEditingController();
@@ -86,21 +89,42 @@ void dispose() {
     );
   }
 
+  // Future<void> addChannelToSupabase(String name) async {
+  //   final user = supabase.auth.currentUser;
+  //   if (user == null) return;
+
+  //   try {
+  //     final response = await supabase.from('channels').insert({
+  //       'name': name,
+  //       'created_by': user.id,
+  //       'created_at': DateTime.now().toIso8601String(),
+  //     });
+  //     // setState(() { channels.add(response[0]); });
+  //   } catch (e) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       SnackBar(content: Text('Error adding channel: $e')),
+  //     );
+  //   }
+  // }
+
   Future<void> addChannelToSupabase(String name) async {
     final user = supabase.auth.currentUser;
     if (user == null) return;
 
     try {
-      final response = await supabase.from('channels').insert({
-        'name': name,
-        'created_by': user.id,
-        'created_at': DateTime.now().toIso8601String(),
+      final response = await supabase
+          .from('channels')
+          .insert({'name': name, 'created_by': user.id})
+          .select()
+          .single();
+
+      setState(() {
+        channels.add(response);
       });
-      // setState(() { channels.add(response[0]); });
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error adding channel: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error adding channel')));
     }
   }
 
@@ -145,16 +169,20 @@ void dispose() {
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeInOut,
           child: ConstrainedBox(
-            constraints: isExpanded ? const BoxConstraints() : const BoxConstraints(maxHeight: 0),
+            constraints: isExpanded
+                ? const BoxConstraints()
+                : const BoxConstraints(maxHeight: 0),
             child: Padding(
               padding: const EdgeInsets.only(left: 30),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ...channels.map((channel) => Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 2),
-                        child: Text('# ${channel['name']}'),
-                      )),
+                  ...channels.map(
+                    (channel) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: Text('# ${channel['name']}'),
+                    ),
+                  ),
                   TextButton.icon(
                     onPressed: showAddChannelDialog,
                     icon: const Icon(Icons.add),
