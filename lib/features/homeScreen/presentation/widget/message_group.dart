@@ -1,9 +1,18 @@
-
 import 'package:flutter/material.dart';
 
 class MessageGroup extends StatelessWidget {
   final List<MessageModel> messages;
-  const MessageGroup({required this.messages});
+  const MessageGroup({super.key, required this.messages});
+  Color getAvatarColor(String name) {
+    final colors = [
+      Colors.blue,
+      Colors.green,
+      Colors.orange,
+      Colors.purple,
+      Colors.teal,
+    ];
+    return colors[name.hashCode % colors.length];
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +27,7 @@ class MessageGroup extends StatelessWidget {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: Colors.brown,
+              color: getAvatarColor(firstMessage.username),
               borderRadius: BorderRadius.circular(8),
             ),
             alignment: Alignment.center,
@@ -41,14 +50,66 @@ class MessageGroup extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    firstMessage.username,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w900,
-                      fontSize: 18,
-                    ),
+                  // Row(
+                  //   crossAxisAlignment: CrossAxisAlignment.end,
+                  //   children: [
+                  //     Text(
+                  //       firstMessage.username,
+                  //       style: const TextStyle(
+                  //         fontWeight: FontWeight.w900,
+                  //         fontSize: 18,
+                  //       ),
+                  //     ),
+                  //     const SizedBox(width: 8),
+                  //     Padding(
+                  //       padding: const EdgeInsets.only(bottom: 2),
+                  //       child: Text(
+                  //         firstMessage.formattedTime,
+                  //         style: const TextStyle(
+                  //           color: Colors.grey,
+                  //           fontSize: 12,
+                  //         ),
+                  //       ),
+                  //     ),
+                  //   ],
+                  // ),
+                  Row(
+                    children: [
+                      Text(
+                        firstMessage.username,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 18,
+                          color: firstMessage.isMe ? Colors.blue : Colors.black,
+                        ),
+                      ),
+
+                      if (firstMessage.isMe) ...[
+                        const SizedBox(width: 6),
+                        Text(
+                          '(You)',
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+
+                      const SizedBox(width: 9),
+
+                      Text(
+                        firstMessage.formattedTime,
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
                   ),
+
                   const SizedBox(height: 2),
+
                   ...messages.map(
                     (msg) => Padding(
                       padding: const EdgeInsets.only(top: 4),
@@ -61,6 +122,8 @@ class MessageGroup extends StatelessWidget {
                       ),
                     ),
                   ),
+
+                  const SizedBox(width: 6),
                 ],
               ),
             ),
@@ -71,15 +134,38 @@ class MessageGroup extends StatelessWidget {
   }
 }
 
+// class MessageModel {
+//   final String text;
+//   final bool isMe;
+//   final String username;
+//  final String time;
+//    MessageModel({
+//     required this.text,
+//     required this.isMe,
+//     required this.username,
+//     required this.time,
+
+//   });
+// }
+
 class MessageModel {
   final String text;
-  final bool isMe;
   final String username;
+  final bool isMe;
+  final DateTime createdAt;
 
   MessageModel({
     required this.text,
-    required this.isMe,
     required this.username,
+    required this.isMe,
+    required this.createdAt,
   });
-}
 
+  // String get formattedTime {
+  //   if (createdAt == null) return '';
+  //   return '${createdAt!.hour}:${createdAt!.minute.toString().padLeft(2, '0')}';
+  // }
+  String get formattedTime {
+    return '${createdAt.hour}:${createdAt.minute.toString().padLeft(2, '0')}';
+  }
+}

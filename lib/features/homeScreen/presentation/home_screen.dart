@@ -1,7 +1,12 @@
+import 'dart:convert';
+import 'dart:developer';
+import 'package:http/http.dart' as http;
+
 import 'package:flutter/material.dart';
 import 'package:slack_clone/core/constants/app_colors.dart';
 import 'package:slack_clone/features/Activity/presentation/activity_screen.dart';
 import 'package:slack_clone/features/DMs/presentation/dms_screen.dart';
+import 'package:slack_clone/features/homeScreen/data/invitation_mail.dart';
 import 'package:slack_clone/features/homeScreen/presentation/view/chat_screen_view.dart';
 import 'package:slack_clone/features/homeScreen/presentation/view/later_screen_view.dart';
 import 'package:slack_clone/features/homeScreen/presentation/widget/app_floating_button.dart';
@@ -70,7 +75,27 @@ void dispose() {
   //       .subscribe();
   // }
 
-  Future<void> addChannelToSupabase(String name) async {
+  // Future<void> addChannelToSupabase(String name) async {
+  //   final user = supabase.auth.currentUser;
+  //   if (user == null) return;
+
+  //   try {
+  //     await supabase.from('channels').insert({
+  //       'name': name,
+  //       'created_by': user.id,
+  //       'created_at': DateTime.now().toIso8601String(),
+  //     });
+  //     ScaffoldMessenger.of(
+  //       context,
+  //     ).showSnackBar(SnackBar(content: Text('Channel "$name" added!')));
+  //   } catch (e) {
+  //     ScaffoldMessenger.of(
+  //       context,
+  //     ).showSnackBar(SnackBar(content: Text('Error adding channel: $e')));
+  //   }
+  // }
+
+  Future<void> addChannelToSupabase(String name, String workspaceId) async {
     final user = supabase.auth.currentUser;
     if (user == null) return;
 
@@ -78,7 +103,8 @@ void dispose() {
       await supabase.from('channels').insert({
         'name': name,
         'created_by': user.id,
-        'created_at': DateTime.now().toIso8601String(),
+        'workspace_id': workspaceId, // مهم جدا
+        // created_at ممكن تشيلي لو جدولك عامل default now()
       });
       ScaffoldMessenger.of(
         context,
@@ -90,7 +116,39 @@ void dispose() {
     }
   }
 
-  void showAddChannelDialog() {
+  // void showAddChannelDialog() {
+  //   final TextEditingController channelController = TextEditingController();
+
+  //   showDialog(
+  //     context: context,
+  //     builder: (_) => AlertDialog(
+  //       title: Text('Add Channel'),
+  //       content: TextField(
+  //         controller: channelController,
+  //         decoration: InputDecoration(hintText: 'Channel name'),
+  //       ),
+  //       actions: [
+  //         TextButton(
+  //           onPressed: () => Navigator.pop(context),
+  //           child: Text('Cancel'),
+  //         ),
+  //         ElevatedButton(
+  //           onPressed: () async {
+  //             final name = channelController.text.trim();
+  //             if (name.isEmpty) return;
+
+  //             await addChannelToSupabase(name);
+
+  //             Navigator.pop(context);
+  //           },
+  //           child: Text('Add'),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
+
+  void showAddChannelDialog(String workspaceId) {
     final TextEditingController channelController = TextEditingController();
 
     showDialog(
@@ -111,7 +169,7 @@ void dispose() {
               final name = channelController.text.trim();
               if (name.isEmpty) return;
 
-              await addChannelToSupabase(name);
+              await addChannelToSupabase(name, workspaceId);
 
               Navigator.pop(context);
             },
@@ -251,7 +309,12 @@ void dispose() {
                       TaggedRow(
                         icon: Icons.add,
                         text: 'Add teammates',
-                        onTap: () {},
+                        onTap: () {
+                          showDialog(
+                            context: context,
+                            builder: (_) => AddTeammateDialog(),
+                          );
+                        },
                         showDownArrow: false,
                       ),
                     ],
@@ -412,6 +475,220 @@ void dispose() {
       ),
 
       body: pages[currentPageIndex],
+    );
+  }
+}
+
+// class AddTeammateDialog extends StatefulWidget {
+//   const AddTeammateDialog({super.key});
+
+//   @override
+//   State<AddTeammateDialog> createState() => _AddTeammateDialogState();
+// }
+
+// class _AddTeammateDialogState extends State<AddTeammateDialog> {
+//   final TextEditingController _emailController = TextEditingController();
+//   bool isLoading = false;
+
+//   Future<void> sendInviteEmail(String email) async {
+//     final url = Uri.parse(
+//       'https://lefjwsixkkojulrpvgdy.supabase.co/functions/v1/send_invite_email',
+//     );
+
+//     final response = await http.post(
+//       url,
+//       headers: {
+//         'Content-Type': 'application/json',
+//         'apikey': 'sb_secret_mZt2MnPwNIgz5RAZfOGfAg_2zeolALz',
+//       },
+//       body: jsonEncode({'email': email}),
+//     );
+
+//     if (response.statusCode == 200) {
+//       log('Email sent successfully!');
+//     } else {
+//       log('Failed to send email: ${response.body}');
+//       throw Exception('Failed to send email');
+//     }
+//   }
+
+//   Future<void> addTeammate() async {
+//     final email = _emailController.text.trim();
+//     if (email.isEmpty) return;
+
+//     setState(() {
+//       isLoading = true;
+//     });
+
+//     try {
+//       await sendInviteEmail(email);
+
+//       ScaffoldMessenger.of(
+//         context,
+//       ).showSnackBar(SnackBar(content: Text('Invitation sent to $email')));
+
+//       Navigator.pop(context);
+//     } catch (e) {
+//       ScaffoldMessenger.of(
+//         context,
+//       ).showSnackBar(SnackBar(content: Text('Error: $e')));
+//     } finally {
+//       setState(() {
+//         isLoading = false;
+//       });
+//     }
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return AlertDialog(
+//       title: const Text('Add Teammate'),
+//       content: TextField(
+//         controller: _emailController,
+//         decoration: const InputDecoration(
+//           labelText: 'Email',
+//           hintText: 'Enter teammate email',
+//         ),
+//         keyboardType: TextInputType.emailAddress,
+//       ),
+//       actions: [
+//         TextButton(
+//           onPressed: () => Navigator.pop(context),
+//           child: const Text('Cancel'),
+//         ),
+//         ElevatedButton(
+//           onPressed: isLoading ? null : addTeammate,
+//           child: isLoading
+//               ? const SizedBox(
+//                   width: 20,
+//                   height: 20,
+//                   child: CircularProgressIndicator(strokeWidth: 2),
+//                 )
+//               : const Text('Send Invite'),
+//         ),
+//       ],
+//     );
+//   }
+// }
+
+class AddTeammateDialog extends StatefulWidget {
+  const AddTeammateDialog({super.key});
+
+  @override
+  State<AddTeammateDialog> createState() => _AddTeammateDialogState();
+}
+
+class _AddTeammateDialogState extends State<AddTeammateDialog> {
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _workspaceController = TextEditingController();
+  bool isLoading = false;
+
+  /// دالة إرسال الدعوة عبر Supabase Function مع الـ Authorization
+  Future<void> sendInvite(String email, String workspaceName) async {
+    final url = Uri.parse(
+      'https://lefjwsixkkojulrpvgdy.supabase.co/functions/v1/send_invite_email',
+    );
+
+    // final response = await http.post(
+    //   url,
+    //   headers: {'Content-Type': 'application/json'},
+    //   body: jsonEncode({'email': email, 'workspaceName': workspaceName}),
+    // );
+
+    // if (response.statusCode == 200) {
+    //   log('Email sent successfully!');
+    // } else {
+    //   log('Failed: ${response.body}');
+    // }
+    final response = await http.post(
+      url,
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email, 'workspaceName': workspaceName}),
+    );
+
+    if (response.statusCode == 200) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Invitation sent to $email')));
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error: ${response.body}')));
+      throw Exception('Failed to send email');
+    }
+  }
+
+  /// دالة التعامل مع زر الإرسال
+  Future<void> addTeammate() async {
+    final email = _emailController.text.trim();
+    final workspaceName = _workspaceController.text.trim();
+
+    if (email.isEmpty || workspaceName.isEmpty) return;
+
+    setState(() {
+      isLoading = true;
+    });
+
+    try {
+      await sendInvite(email, workspaceName);
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Invitation sent to $email')));
+
+      Navigator.pop(context); // اغلاق الـ Dialog بعد الإرسال
+    } catch (e) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error sending invitation: $e')));
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Add Teammate'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: _emailController,
+            decoration: const InputDecoration(
+              labelText: 'Email',
+              hintText: 'Enter teammate email',
+            ),
+            keyboardType: TextInputType.emailAddress,
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _workspaceController,
+            decoration: const InputDecoration(
+              labelText: 'Workspace Name',
+              hintText: 'Enter workspace name',
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: isLoading ? null : addTeammate,
+          child: isLoading
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('Send Invite'),
+        ),
+      ],
     );
   }
 }

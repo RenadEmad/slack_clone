@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:slack_clone/core/constants/app_colors.dart';
 import 'package:slack_clone/core/constants/app_image_strings.dart';
+import 'package:slack_clone/features/splash_screen/view/login_screen.dart';
 import 'package:slack_clone/sharedConfig/routes/app_routes.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -44,8 +45,7 @@ class _SplashScreenState extends State<SplashScreen>
     return Scaffold(
       backgroundColor: AppColors.splashBackgroundColor,
       body: SafeArea(
-        child: 
-        Center(
+        child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -91,7 +91,12 @@ class _SplashScreenState extends State<SplashScreen>
               Column(
                 children: [
                   ElevatedButton(
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      );
+                    },
                     style: ElevatedButton.styleFrom(
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -99,7 +104,7 @@ class _SplashScreenState extends State<SplashScreen>
                       minimumSize: const Size(300, 50),
                     ),
                     child: const Text(
-                      'Go on..',
+                      'Log in',
                       style: TextStyle(
                         color: AppColors.mainTextColor,
                         fontFamily: 'SignikaNegative',

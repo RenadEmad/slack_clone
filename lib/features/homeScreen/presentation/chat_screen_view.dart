@@ -1,120 +1,7 @@
-// import 'package:flutter/material.dart';
-// import 'package:slack_clone/features/homeScreen/presentation/widget/chat_input_bar.dart';
-// import 'package:slack_clone/features/homeScreen/presentation/widget/message_group.dart';
-// import 'package:slack_clone/features/homeScreen/presentation/widget/system_message.dart';
-// import 'package:slack_clone/features/homeScreen/presentation/widget/user_join_message.dart';
-// import 'package:slack_clone/features/homeScreen/presentation/widget/work_flow_message.dart';
-
-// class ChatScreen extends StatefulWidget {
-//   const ChatScreen({super.key});
-
-//   @override
-//   State<ChatScreen> createState() => _ChatScreenState();
-// }
-
-// class _ChatScreenState extends State<ChatScreen> {
-//   final TextEditingController _controller = TextEditingController();
-
-//   final List<MessageModel> _messages = [
-//     MessageModel(text: 'Hello Renad ', isMe: false, username: 'Slack Bot'),
-//     MessageModel(text: 'Feeling great!', isMe: false, username: 'Slack Bot'),
-//     MessageModel(text: 'Hi! How are you?', isMe: true, username: 'Renad'),
-//     MessageModel(text: 'I am fine, thanks!', isMe: true, username: 'Renad'),
-//     MessageModel(text: 'Who are you', isMe: true, username: 'Renad'),
-//   ];
-
-//   void _sendMessage() {
-//     if (_controller.text.trim().isEmpty) return;
-
-//     setState(() {
-//       _messages.add(
-//         MessageModel(
-//           text: _controller.text.trim(),
-//           isMe: true,
-//           username: 'Renad',
-//         ),
-//       );
-//     });
-
-//     _controller.clear();
-//   }
-
-//   List<List<MessageModel>> _groupMessages(List<MessageModel> messages) {
-//     List<List<MessageModel>> grouped = [];
-//     for (var message in messages) {
-//       if (grouped.isEmpty || grouped.last.first.username != message.username) {
-//         grouped.add([message]);
-//       } else {
-//         grouped.last.add(message);
-//       }
-//     }
-//     return grouped;
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     final groupedMessages = _groupMessages(_messages);
-
-//     return Scaffold(
-//       backgroundColor: Colors.white,
-//       appBar: AppBar(
-//         elevation: 0,
-//         backgroundColor: Colors.white,
-//         leading: const BackButton(color: Colors.black),
-//         title: Column(
-//           crossAxisAlignment: CrossAxisAlignment.start,
-//           children: const [
-//             Text(
-//               '# team-',
-//               style: TextStyle(
-//                 color: Colors.black,
-//                 fontWeight: FontWeight.bold,
-//               ),
-//             ),
-//             SizedBox(height: 2),
-//             Text(
-//               '2 members • 4 tabs',
-//               style: TextStyle(color: Colors.grey, fontSize: 12),
-//             ),
-//           ],
-//         ),
-//         actions: const [
-//           Padding(
-//             padding: EdgeInsets.symmetric(horizontal: 12),
-//             child: Icon(Icons.headphones, color: Colors.black),
-//           ),
-//         ],
-//       ),
-//       body: Column(
-//         children: [
-//           Expanded(
-//             child: ListView(
-//               padding: const EdgeInsets.all(16),
-//               children: [
-//                 const SystemMessage(),
-//                 const SizedBox(height: 12),
-//                 const UserJoinMessage(),
-//                 const SizedBox(height: 12),
-//                 const WorkflowMessage(),
-//                 const SizedBox(height: 12),
-//                 ...groupedMessages.map(
-//                   (group) => MessageGroup(messages: group),
-//                 ),
-//               ],
-//             ),
-//           ),
-//           ChatInputBar(controller: _controller, onSend: _sendMessage),
-//         ],
-//       ),
-//     );
-//   }
-// }
-
+import 'dart:developer';
 import 'package:flutter/material.dart';
-import 'package:slack_clone/main.dart';
-import 'package:slack_clone/features/homeScreen/presentation/widget/chat_input_bar.dart';
-import 'package:slack_clone/features/homeScreen/presentation/widget/message_group.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:slack_clone/features/homeScreen/presentation/widget/chat_input_bar.dart';
 
 class ChatScreen extends StatefulWidget {
   final String channelId;
@@ -133,7 +20,10 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final TextEditingController _controller = TextEditingController();
   final List<MessageModel> _messages = [];
+  bool isLoading = true;
   late RealtimeChannel messagesSubscription;
+
+  final supabase = Supabase.instance.client;
 
   @override
   void initState() {
@@ -142,131 +32,808 @@ class _ChatScreenState extends State<ChatScreen> {
     subscribeToMessages();
   }
 
-  /// 🔹 جلب الرسائل الخاصة بالقناة
   Future<void> fetchMessages() async {
-    final response = await supabase
-        .from('messages')
-        .select()
-        .eq('channel_id', widget.channelId)
-        .order('created_at');
+    final user = supabase.auth.currentUser;
+    if (user == null) {
+      log('No user logged in');
+      setState(() => isLoading = false);
+      return;
+    }
 
-    setState(() {
-      _messages.clear();
-      _messages.addAll(
-        response.map<MessageModel>(
-          (e) => MessageModel(
-            text: e['content'],
-            isMe: e['sender_id'] == supabase.auth.currentUser!.id,
-            username: e['sender_name'] ?? 'User',
-          ),
-        ),
-      );
-    });
+    try {
+      final response = await supabase
+          .from('messages')
+          .select('content, sender_id, created_at, profiles!inner(username)')
+          .eq('channel_id', widget.channelId)
+          .order('created_at', ascending: true);
+
+      setState(() {
+        _messages.clear();
+        _messages.addAll(
+          response.map<MessageModel>((e) {
+            return MessageModel(
+              text: e['content'] ?? 'no content',
+              isMe: e['sender_id'] == user.id,
+              username: e['profiles']?['username'] ?? 'no username',
+              createdAt: DateTime.parse(e['created_at']),
+            );
+          }),
+        );
+        isLoading = false;
+      });
+    } catch (e) {
+      log('Error fetching messages: $e');
+      setState(() => isLoading = false);
+    }
   }
 
-  /// 🔹 Realtime
   void subscribeToMessages() {
     messagesSubscription = supabase
-        .channel('messages:${widget.channelId}')
+        .channel('public:messages')
         .onPostgresChanges(
           event: PostgresChangeEvent.insert,
           schema: 'public',
           table: 'messages',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'channel_id',
-            value: widget.channelId,
-          ),
           callback: (payload) {
-            final data = payload.newRecord;
-            setState(() {
-              _messages.add(
-                MessageModel(
-                  text: data['content'],
-                  isMe:
-                      data['sender_id'] ==
-                      supabase.auth.currentUser!.id,
-                  username: data['sender_name'] ?? 'User',
-                ),
+            if (payload.newRecord['channel_id'] == widget.channelId) {
+              final userId = supabase.auth.currentUser?.id;
+              final msg = MessageModel(
+                text: payload.newRecord['content'] ?? 'no content',
+                isMe: payload.newRecord['sender_id'] == userId,
+                username:
+                    payload.newRecord['profiles']?['username'] ?? 'no username',
+                createdAt: DateTime.parse(payload.newRecord['created_at']),
               );
-            });
+
+              setState(() {
+                _messages.add(msg);
+                _messages.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+              });
+            }
           },
         )
         .subscribe();
   }
 
-  /// 🔹 إرسال رسالة
-  Future<void> sendMessage() async {
-    final text = _controller.text.trim();
-    if (text.isEmpty) return;
+  Future<void> sendMessage(String content) async {
+    final user = supabase.auth.currentUser;
+    if (user == null) return;
 
-    final user = supabase.auth.currentUser!;
-    _controller.clear();
-
-    await supabase.from('messages').insert({
-      'channel_id': widget.channelId,
-      'content': text,
-      'sender_id': user.id,
-      'sender_name': user.email, // أو username
-    });
-  }
-
-  List<List<MessageModel>> groupMessages(List<MessageModel> messages) {
-    List<List<MessageModel>> grouped = [];
-    for (var msg in messages) {
-      if (grouped.isEmpty ||
-          grouped.last.first.username != msg.username) {
-        grouped.add([msg]);
-      } else {
-        grouped.last.add(msg);
-      }
+    try {
+      await supabase.from('messages').insert({
+        'channel_id': widget.channelId,
+        'sender_id': user.id,
+        'content': content,
+        'created_at': DateTime.now().toIso8601String(),
+      });
+      _controller.clear();
+    } catch (e) {
+      log('Send message error: $e');
     }
-    return grouped;
   }
 
   @override
   void dispose() {
     supabase.removeChannel(messagesSubscription);
+    _controller.dispose();
     super.dispose();
+  }
+
+  // === تجميع الرسائل المتتالية لنفس المستخدم ===
+  List<Widget> buildMessageGroups(List<MessageModel> messages) {
+    List<Widget> groups = [];
+    if (messages.isEmpty) return groups;
+
+    List<MessageModel> currentGroup = [messages.first];
+
+    for (int i = 1; i < messages.length; i++) {
+      if (messages[i].username == currentGroup.last.username) {
+        // نفس الشخص
+        currentGroup.add(messages[i]);
+      } else {
+        // شخص مختلف
+        groups.add(MessageGroup(messages: currentGroup));
+        currentGroup = [messages[i]];
+      }
+    }
+
+    groups.add(MessageGroup(messages: currentGroup));
+    return groups;
   }
 
   @override
   Widget build(BuildContext context) {
-    final groupedMessages = groupMessages(_messages);
-
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: const BackButton(color: Colors.black),
-        title: Text(
-          '# ${widget.channelName}',
-          style: const TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-      body: Column(
+      appBar: AppBar(title: Text('# ${widget.channelName}')),
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : Column(
+              children: [
+                Expanded(
+                  child: _messages.isEmpty
+                      ? const Center(child: Text('No messages yet 👋'))
+                      : ListView(
+                          padding: const EdgeInsets.all(16),
+                          children: buildMessageGroups(_messages),
+                        ),
+                ),
+                ChatInputBar(
+                  controller: _controller,
+                  onSend: () {
+                    final text = _controller.text.trim();
+                    if (text.isEmpty) return;
+                    sendMessage(text);
+                  },
+                ),
+              ],
+            ),
+    );
+  }
+}
+
+// ================= MESSAGE MODEL =================
+class MessageModel {
+  final String text;
+  final bool isMe;
+  final String username;
+  final DateTime createdAt;
+
+  MessageModel({
+    required this.text,
+    required this.isMe,
+    required this.username,
+    required this.createdAt,
+  });
+
+  String get formattedTime {
+    return '${createdAt.hour.toString().padLeft(2, '0')}:${createdAt.minute.toString().padLeft(2, '0')}';
+  }
+}
+
+// ================= MESSAGE GROUP =================
+class MessageGroup extends StatelessWidget {
+  final List<MessageModel> messages;
+  const MessageGroup({super.key, required this.messages});
+
+  Color getAvatarColor(String name) {
+    final colors = [
+      Colors.blue,
+      Colors.green,
+      Colors.orange,
+      Colors.purple,
+      Colors.teal,
+    ];
+    return colors[name.hashCode % colors.length];
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final firstMessage = messages.first;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: firstMessage.isMe
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         children: [
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: groupedMessages.length,
-              itemBuilder: (_, index) {
-                return MessageGroup(
-                  messages: groupedMessages[index],
-                );
-              },
+          if (!firstMessage.isMe) ...[
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: getAvatarColor(firstMessage.username),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                firstMessage.username.substring(0, 2).toUpperCase(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+          ],
+          Flexible(
+            child: Column(
+              crossAxisAlignment: firstMessage.isMe
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
+              children: [
+                if (!firstMessage.isMe)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: Text(
+                      firstMessage.username,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ),
+                ...messages.map(
+                  (msg) => Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: msg.isMe
+                            ? Colors.blue.withOpacity(0.15)
+                            : Colors.grey.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: msg.isMe
+                            ? CrossAxisAlignment.end
+                            : CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            msg.text,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: msg.isMe
+                                  ? Colors.blue[800]
+                                  : Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            msg.formattedTime,
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: msg.isMe
+                                  ? Colors.blueGrey
+                                  : Colors.grey[600],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
-          ChatInputBar(
-            controller: _controller,
-            onSend: sendMessage,
-          ),
+          if (firstMessage.isMe) ...[
+            const SizedBox(width: 8),
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: getAvatarColor(firstMessage.username),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                firstMessage.username.substring(0, 2).toUpperCase(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// import 'dart:developer';
+
+// import 'package:flutter/material.dart';
+// import 'package:supabase_flutter/supabase_flutter.dart';
+// import 'package:slack_clone/features/homeScreen/presentation/widget/chat_input_bar.dart';
+
+// class ChatScreen extends StatefulWidget {
+//   final String channelId;
+//   final String channelName;
+
+//   const ChatScreen({
+//     super.key,
+//     required this.channelId,
+//     required this.channelName,
+//   });
+
+//   @override
+//   State<ChatScreen> createState() => _ChatScreenState();
+// }
+
+// class _ChatScreenState extends State<ChatScreen> {
+//   final TextEditingController _controller = TextEditingController();
+//   final List<MessageModel> _messages = [];
+//   bool isLoading = true;
+//   late RealtimeChannel messagesSubscription;
+
+//   final supabase = Supabase.instance.client;
+
+//   @override
+//   void initState() {
+//     super.initState();
+//     fetchMessages();
+//     subscribeToMessages();
+//   }
+
+//   Future<void> fetchMessages() async {
+//     final user = supabase.auth.currentUser;
+//     if (user == null) {
+//       log('No user logged in');
+//       setState(() => isLoading = false);
+//       return;
+//     }
+
+//     try {
+//       final response = await supabase
+//           .from('messages')
+//           .select('content, sender_id, created_at, profiles!inner(username)')
+//           .eq('channel_id', widget.channelId)
+//           .order('created_at', ascending: true);
+
+//       log('Fetched messages raw: $response');
+
+//       setState(() {
+//         _messages.clear();
+//         _messages.addAll(
+//           response.map<MessageModel>((e) {
+//             log('Message item: $e');
+//             return MessageModel(
+//               text: e['content'] ?? 'no content',
+//               isMe: e['sender_id'] == user.id,
+//               username: e['profiles']?['username'] ?? 'no username',
+//               createdAt: DateTime.parse(e['created_at']),
+//             );
+//           }),
+//         );
+//         isLoading = false;
+//       });
+
+//       log('Messages list length: ${_messages.length}');
+//     } catch (e) {
+//       log('Error fetching messages: $e');
+//       setState(() => isLoading = false);
+//     }
+//   }
+
+//   void subscribeToMessages() {
+//     messagesSubscription = supabase
+//         .channel('public:messages')
+//         .onPostgresChanges(
+//           event: PostgresChangeEvent.insert,
+//           schema: 'public',
+//           table: 'messages',
+//           callback: (payload) {
+//             log('Realtime payload: $payload');
+//             if (payload.newRecord['channel_id'] == widget.channelId) {
+//               final userId = supabase.auth.currentUser?.id;
+//               final msg = MessageModel(
+//                 text: payload.newRecord['content'] ?? 'no content',
+//                 isMe: payload.newRecord['sender_id'] == userId,
+//                 username:
+//                     payload.newRecord['profiles']?['username'] ?? 'no username',
+//                 createdAt: DateTime.parse(payload.newRecord['created_at']),
+//               );
+
+//               setState(() {
+//                 _messages.add(msg);
+//                 _messages.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+//               });
+//             }
+//           },
+//         )
+//         .subscribe();
+//   }
+
+//   Future<void> sendMessage(String content) async {
+//     final user = supabase.auth.currentUser;
+//     if (user == null) {
+//       log('Cannot send: no user');
+//       return;
+//     }
+
+//     try {
+//       final res = await supabase.from('messages').insert({
+//         'channel_id': widget.channelId,
+//         'sender_id': user.id,
+//         'content': content,
+//         'created_at': DateTime.now().toIso8601String(),
+//       });
+
+//       log('Insert response: $res');
+
+//       _controller.clear();
+//     } catch (e) {
+//       log('Send message error: $e');
+//     }
+//   }
+
+//   @override
+//   void dispose() {
+//     supabase.removeChannel(messagesSubscription);
+//     _controller.dispose();
+//     super.dispose();
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: AppBar(title: Text('# ${widget.channelName}')),
+//       body: isLoading
+//           ? const Center(child: CircularProgressIndicator())
+//           : Column(
+//               children: [
+//                 Expanded(
+//                   child: _messages.isEmpty
+//                       ? const Center(child: Text('No messages yet 👋'))
+//                       : ListView.builder(
+//                           padding: const EdgeInsets.all(16),
+//                           itemCount: _messages.length,
+//                           itemBuilder: (_, index) {
+//                             return MessageBubble(message: _messages[index]);
+//                           },
+//                         ),
+//                 ),
+//                 ChatInputBar(
+//                   controller: _controller,
+//                   onSend: () {
+//                     final text = _controller.text.trim();
+//                     if (text.isEmpty) return;
+//                     sendMessage(text);
+//                   },
+//                 ),
+//               ],
+//             ),
+//     );
+//   }
+// }
+
+// class MessageModel {
+//   final String text;
+//   final bool isMe;
+//   final String username;
+//   final DateTime createdAt;
+
+//   MessageModel({
+//     required this.text,
+//     required this.isMe,
+//     required this.username,
+//     required this.createdAt,
+//   });
+// }
+
+// // ================= MESSAGE BUBBLE =================
+// class MessageBubble extends StatelessWidget {
+//   final MessageModel message;
+
+//   const MessageBubble({super.key, required this.message});
+
+//   Color _generateColor(String username) {
+//     // لون ثابت لكل يوزر حسب الاسم
+//     final hash = username.hashCode;
+//     final r = (hash & 0xFF0000) >> 16;
+//     final g = (hash & 0x00FF00) >> 8;
+//     final b = (hash & 0x0000FF);
+//     return Color.fromARGB(255, r, g, b).withOpacity(0.8);
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     final isMe = message.isMe;
+
+//     return Container(
+//       margin: const EdgeInsets.symmetric(vertical: 6),
+//       child: Row(
+//         crossAxisAlignment: CrossAxisAlignment.start,
+//         mainAxisAlignment: isMe
+//             ? MainAxisAlignment.end
+//             : MainAxisAlignment.start,
+//         children: [
+//           if (!isMe) ...[
+//             // مربع اول حرفين من اسم اليوزر
+//             Container(
+//               width: 36,
+//               height: 36,
+//               decoration: BoxDecoration(
+//                 color: _generateColor(message.username),
+//                 borderRadius: BorderRadius.circular(8),
+//               ),
+//               alignment: Alignment.center,
+//               child: Text(
+//                 message.username.substring(0, 2).toUpperCase(),
+//                 style: const TextStyle(
+//                   color: Colors.white,
+//                   fontWeight: FontWeight.bold,
+//                 ),
+//               ),
+//             ),
+//             const SizedBox(width: 8),
+//           ],
+//           // محتوى الرسالة
+//           Flexible(
+//             child: Container(
+//               padding: const EdgeInsets.all(12),
+//               decoration: BoxDecoration(
+//                 color: isMe ? Colors.blue[400] : Colors.white,
+//                 borderRadius: BorderRadius.circular(16),
+//                 boxShadow: [
+//                   BoxShadow(
+//                     color: Colors.black.withOpacity(0.05),
+//                     blurRadius: 4,
+//                     offset: const Offset(0, 2),
+//                   ),
+//                 ],
+//               ),
+//               child: Column(
+//                 crossAxisAlignment: CrossAxisAlignment.start,
+//                 children: [
+//                   if (!isMe)
+//                     Text(
+//                       message.username,
+//                       style: const TextStyle(
+//                         fontWeight: FontWeight.bold,
+//                         fontSize: 13,
+//                       ),
+//                     ),
+//                   const SizedBox(height: 2),
+//                   Text(
+//                     message.text,
+//                     style: TextStyle(
+//                       color: isMe ? Colors.white : Colors.black87,
+//                       fontSize: 15,
+//                     ),
+//                   ),
+//                   const SizedBox(height: 4),
+//                   Text(
+//                     '${message.createdAt.hour.toString().padLeft(2, '0')}:${message.createdAt.minute.toString().padLeft(2, '0')}',
+//                     style: TextStyle(
+//                       fontSize: 10,
+//                       color: isMe ? Colors.white70 : Colors.grey[600],
+//                     ),
+//                   ),
+//                 ],
+//               ),
+//             ),
+//           ),
+//           if (isMe) const SizedBox(width: 36), // نفس المسافة للشكل المتناسق
+//         ],
+//       ),
+//     );
+//   }
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// import 'dart:developer';
+
+// import 'package:flutter/material.dart';
+// import 'package:supabase_flutter/supabase_flutter.dart';
+// import 'package:slack_clone/features/homeScreen/presentation/widget/chat_input_bar.dart';
+
+// class ChatScreen extends StatefulWidget {
+//   final String channelId;
+//   final String channelName;
+
+//   const ChatScreen({
+//     super.key,
+//     required this.channelId,
+//     required this.channelName,
+//   });
+
+//   @override
+//   State<ChatScreen> createState() => _ChatScreenState();
+// }
+
+// class _ChatScreenState extends State<ChatScreen> {
+//   final TextEditingController _controller = TextEditingController();
+//   final List<MessageModel> _messages = [];
+//   bool isLoading = true;
+//   late RealtimeChannel messagesSubscription;
+
+//   final supabase = Supabase.instance.client;
+
+//   @override
+//   void initState() {
+//     super.initState();
+//     fetchMessages();
+//     subscribeToMessages();
+//   }
+
+//   Future<void> fetchMessages() async {
+//     final user = supabase.auth.currentUser;
+//     if (user == null) {
+//       log('No user logged in');
+//       setState(() => isLoading = false);
+//       return;
+//     }
+
+//     try {
+//       final response = await supabase
+//           .from('messages')
+//           .select('content, sender_id, created_at, profiles!inner(username)')
+//           .eq('channel_id', widget.channelId)
+//           .order('created_at', ascending: true);
+
+//       log('Fetched messages raw: $response');
+
+//       setState(() {
+//         _messages.clear();
+//         _messages.addAll(
+//           response.map<MessageModel>((e) {
+//             log('Message item: $e');
+//             return MessageModel(
+//               text: e['content'] ?? 'no content',
+//               isMe: e['sender_id'] == user.id,
+//               username: e['profiles']?['username'] ?? 'no username',
+//               createdAt: DateTime.parse(e['created_at']),
+//             );
+//           }),
+//         );
+//         isLoading = false;
+//       });
+
+//       log('Messages list length: ${_messages.length}');
+//     } catch (e) {
+//       log('Error fetching messages: $e');
+//       setState(() => isLoading = false);
+//     }
+//   }
+
+//   void subscribeToMessages() {
+//     messagesSubscription = supabase
+//         .channel('public:messages')
+//         .onPostgresChanges(
+//           event: PostgresChangeEvent.insert,
+//           schema: 'public',
+//           table: 'messages',
+//           callback: (payload) {
+//             log('Realtime payload: $payload');
+//             if (payload.newRecord['channel_id'] == widget.channelId) {
+//               final userId = supabase.auth.currentUser?.id;
+//               final msg = MessageModel(
+//                 text: payload.newRecord['content'] ?? 'no content',
+//                 isMe: payload.newRecord['sender_id'] == userId,
+//                 username:
+//                     payload.newRecord['profiles']?['username'] ?? 'no username',
+//                 createdAt: DateTime.parse(payload.newRecord['created_at']),
+//               );
+
+//               setState(() {
+//                 _messages.add(msg);
+//                 _messages.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+//               });
+//             }
+//           },
+//         )
+//         .subscribe();
+//   }
+
+//   Future<void> sendMessage(String content) async {
+//     final user = supabase.auth.currentUser;
+//     if (user == null) {
+//       log('Cannot send: no user');
+//       return;
+//     }
+
+//     try {
+//       final res = await supabase.from('messages').insert({
+//         'channel_id': widget.channelId,
+//         'sender_id': user.id,
+//         'content': content,
+//         'created_at': DateTime.now().toIso8601String(),
+//       });
+
+//       log('Insert response: $res');
+
+//       _controller.clear();
+//     } catch (e) {
+//       log('Send message error: $e');
+//     }
+//   }
+
+//   @override
+//   void dispose() {
+//     supabase.removeChannel(messagesSubscription);
+//     _controller.dispose();
+//     super.dispose();
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: AppBar(title: Text('# ${widget.channelName}')),
+//       body: isLoading
+//           ? const Center(child: CircularProgressIndicator())
+//           : Column(
+//               children: [
+//                 Expanded(
+//                   child: _messages.isEmpty
+//                       ? const Center(child: Text('No messages yet 👋'))
+//                       : ListView.builder(
+//                           padding: const EdgeInsets.all(16),
+//                           itemCount: _messages.length,
+//                           itemBuilder: (_, index) {
+//                             final msg = _messages[index];
+//                             return ListTile(
+//                               title: Text(msg.username),
+//                               subtitle: Text(msg.text),
+//                               trailing: msg.isMe
+//                                   ? const Icon(Icons.check)
+//                                   : null,
+//                             );
+//                           },
+//                         ),
+//                 ),
+//                 ChatInputBar(
+//                   controller: _controller,
+//                   onSend: () {
+//                     final text = _controller.text.trim();
+//                     if (text.isEmpty) return;
+//                     sendMessage(text);
+//                   },
+//                 ),
+//               ],
+//             ),
+//     );
+//   }
+// }
+
+// class MessageModel {
+//   final String text;
+//   final bool isMe;
+//   final String username;
+//   final DateTime createdAt;
+
+//   MessageModel({
+//     required this.text,
+//     required this.isMe,
+//     required this.username,
+//     required this.createdAt,
+//   });
+// }
