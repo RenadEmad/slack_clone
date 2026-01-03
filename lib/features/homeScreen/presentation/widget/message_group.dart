@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:slack_clone/core/utils/powersync.dart';
 
 class MessageGroup extends StatelessWidget {
   final List<MessageModel> messages;
@@ -50,29 +51,6 @@ class MessageGroup extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Row(
-                  //   crossAxisAlignment: CrossAxisAlignment.end,
-                  //   children: [
-                  //     Text(
-                  //       firstMessage.username,
-                  //       style: const TextStyle(
-                  //         fontWeight: FontWeight.w900,
-                  //         fontSize: 18,
-                  //       ),
-                  //     ),
-                  //     const SizedBox(width: 8),
-                  //     Padding(
-                  //       padding: const EdgeInsets.only(bottom: 2),
-                  //       child: Text(
-                  //         firstMessage.formattedTime,
-                  //         style: const TextStyle(
-                  //           color: Colors.grey,
-                  //           fontSize: 12,
-                  //         ),
-                  //       ),
-                  //     ),
-                  //   ],
-                  // ),
                   Row(
                     children: [
                       Text(
@@ -134,20 +112,6 @@ class MessageGroup extends StatelessWidget {
   }
 }
 
-// class MessageModel {
-//   final String text;
-//   final bool isMe;
-//   final String username;
-//  final String time;
-//    MessageModel({
-//     required this.text,
-//     required this.isMe,
-//     required this.username,
-//     required this.time,
-
-//   });
-// }
-
 class MessageModel {
   final String text;
   final String username;
@@ -168,4 +132,39 @@ class MessageModel {
   String get formattedTime {
     return '${createdAt.hour}:${createdAt.minute.toString().padLeft(2, '0')}';
   }
+
+//   Stream<List<MessageModel>> (String senderId)
+//   {
+//  return db.watch(sql);
+//   }
+
+// Stream<List<MessageModel>> watchMessages({
+//   required String channelId,
+//   required String currentUserId,
+// }) {
+//   return db.watch(
+//     '''
+//     SELECT 
+//       m.content,
+//       m.sender_id,
+//       m.created_at,
+//       p.username
+//     FROM messages m
+//     JOIN profiles p ON p.user_id = m.sender_id
+//     WHERE m.channel_id = ?
+//     ORDER BY m.created_at ASC
+//     ''',
+//     parameters: [channelId],
+//   ).map((rows) {
+//     return rows.map<MessageModel>((row) {
+//       return MessageModel(
+//         text: row['content'] as String,
+//         isMe: row['sender_id'] == currentUserId,
+//         username: row['username'] as String,
+//         createdAt: DateTime.parse(row['created_at'] as String),
+//       );
+//     }).toList();
+//   });
+// }
+
 }

@@ -8,12 +8,14 @@ import 'package:slack_clone/features/search/presentation/view/search_screen_view
 import 'package:slack_clone/features/sign_in/presentation/view/chEmail/view/check_email_view.dart';
 import 'package:slack_clone/features/sign_in/presentation/view/chNotification/view/check_notification_view.dart';
 import 'package:slack_clone/features/sign_in/presentation/view/signup/view/sign_in_view.dart';
+import 'package:slack_clone/features/splash_screen/view/login_screen.dart';
 import 'package:slack_clone/features/splash_screen/view/splach_screen_view.dart';
 
 class Routes {
   const Routes._();
   static const String splashScreen = '/splash-screen';
   static const String signup = '/signup';
+  static const String login = '/login';
   static const String checkEmail = '/check-email';
   static const String checkNotification = '/check-notification';
   static const String homeScreen = '/home-screen';
@@ -37,6 +39,10 @@ final appRouter = GoRouter(
       builder: (context, state) => const SignInView(),
     ),
     GoRoute(
+      path: Routes.login,
+      builder: (context, state) => const LoginScreen(),
+    ),
+    GoRoute(
       path: Routes.checkEmail,
       builder: (context, state) => const CheckEmailView(),
     ),
@@ -53,16 +59,16 @@ final appRouter = GoRouter(
     //   builder: (context, state) => const ChatScreenView(),
     // ),
     GoRoute(
-  path: Routes.chatScreen,
-  builder: (context, state) {
-    final data = state.extra as Map<String, dynamic>;
+      path: Routes.chatScreen,
+      builder: (context, state) {
+        final data = state.extra as Map<String, dynamic>;
 
-    return ChatScreenView(
-      channelId: data['channelId'],
-      channelName: data['channelName'],
-    );
-  },
-),
+        return ChatScreenView(
+          channelId: data['channelId'],
+          channelName: data['channelName'],
+        );
+      },
+    ),
 
     GoRoute(
       path: Routes.dmsScreen,

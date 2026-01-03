@@ -1,4 +1,5 @@
 import 'dart:developer';
+import 'dart:math' hide log;
 
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -7,6 +8,7 @@ import 'package:slack_clone/core/constants/app_colors.dart';
 import 'package:slack_clone/core/constants/app_strings.dart';
 import 'package:slack_clone/core/constants/app_text_style.dart';
 import 'package:slack_clone/features/homeScreen/presentation/view/home_screen_view.dart';
+import 'package:slack_clone/features/sign_in/presentation/widget/custom_text_field.dart';
 import 'package:slack_clone/features/sign_in/presentation/widget/text_button_word.dart';
 import 'package:slack_clone/features/splash_screen/view/splach_screen_view.dart';
 import 'package:slack_clone/sharedConfig/routes/app_routes.dart';
@@ -149,25 +151,25 @@ class _SignInScreenState extends State<SignInScreen> {
 
               const SizedBox(height: 20),
 
-              TextField(
+              CustomTextField(
+                label: 'Username',
                 controller: usernameController,
-                decoration: _inputDecoration('Username'),
+                obscureText: false,
               ),
 
               const SizedBox(height: 20),
 
-              TextField(
+              CustomTextField(
+                label: 'Email',
                 controller: emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: _inputDecoration(AppStrings.emailHintText),
+                obscureText: false,
               ),
 
               const SizedBox(height: 20),
-
-              TextField(
+              CustomTextField(
+                label: 'Password',
                 controller: passwordController,
                 obscureText: true,
-                decoration: _inputDecoration('Password'),
               ),
 
               const SizedBox(height: 20),
@@ -177,13 +179,13 @@ class _SignInScreenState extends State<SignInScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.brown,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
+                    borderRadius: BorderRadius.circular(5),
                   ),
                   minimumSize: const Size(double.infinity, 50),
                   elevation: 0,
                 ),
                 child: const Text(
-                  'Sign inn',
+                  'Sign in',
                   style: TextStyle(
                     color: Colors.white,
                     fontFamily: 'SignikaNegative',
@@ -191,7 +193,19 @@ class _SignInScreenState extends State<SignInScreen> {
                   ),
                 ),
               ),
-
+              SizedBox(height: 10),
+              Align(
+                alignment: AlignmentGeometry.center,
+                child: TextWithButton(
+                  text: 'Already have an account? ',
+                  tfontSize: 16,
+                  t2fontSize: 18,
+                  buttonText: 'Login',
+                  onPressed: () {
+                    context.go(Routes.login);
+                  },
+                ),
+              ),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 child: Row(
@@ -212,7 +226,7 @@ class _SignInScreenState extends State<SignInScreen> {
                   backgroundColor: Colors.white,
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
+                    borderRadius: BorderRadius.circular(5),
                     side: const BorderSide(color: Color(0xffbebebe)),
                   ),
                   minimumSize: const Size(double.infinity, 50),
@@ -237,18 +251,18 @@ class _SignInScreenState extends State<SignInScreen> {
               const SizedBox(height: 20),
 
               Column(
-                children: const [
-                  TextWithButton(
+                children: [
+                  const TextWithButton(
                     text: 'Signed in on a computer? ',
                     buttonText: 'Continue with a QR code',
                   ),
-                  SizedBox(height: 12),
-                  TextWithButton(
+                  const SizedBox(height: 12),
+                  const TextWithButton(
                     text: 'Having trouble? ',
                     buttonText: 'Enter a workspace URL',
                   ),
-                  SizedBox(height: 12),
-                  TextWithButton(
+                  const SizedBox(height: 12),
+                  const TextWithButton(
                     text: 'Looking for GovSlack? ',
                     buttonText: 'Sign in',
                   ),

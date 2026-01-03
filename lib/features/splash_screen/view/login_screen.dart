@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:slack_clone/core/constants/app_colors.dart';
 import 'package:slack_clone/features/homeScreen/presentation/view/home_screen_view.dart';
+import 'package:slack_clone/features/sign_in/presentation/widget/custom_text_field.dart';
+import 'package:slack_clone/features/sign_in/presentation/widget/text_button_word.dart';
+import 'package:slack_clone/sharedConfig/routes/app_routes.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -39,7 +44,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
         final username = profile['username'] ?? '';
 
-        // تحديث حالة أونلاين
         await supabase
             .from('profiles')
             .update({'is_online': true})
@@ -49,7 +53,6 @@ class _LoginScreenState extends State<LoginScreen> {
           context,
         ).showSnackBar(SnackBar(content: Text('Welcome, $username!')));
 
-        // الانتقال للصفحة الرئيسية
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const HomeScreenView()),
@@ -67,7 +70,18 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Login')),
+      backgroundColor: Colors.white,
+
+      appBar: AppBar(
+        leading: IconButton(
+          onPressed: () {
+            context.go(Routes.splashScreen);
+          },
+          icon: Icon(Icons.arrow_back),
+        ),
+        title: const Text('Login'),
+        backgroundColor: AppColors.splashBackgroundColor,
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
         child: Column(
@@ -82,31 +96,42 @@ class _LoginScreenState extends State<LoginScreen> {
               ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 40),
-            TextField(
+            CustomTextField(
+              label: 'Email',
               controller: _emailController,
-              decoration: const InputDecoration(
-                labelText: 'Email',
-                border: OutlineInputBorder(),
-              ),
               keyboardType: TextInputType.emailAddress,
             ),
+
             const SizedBox(height: 20),
-            TextField(
+            CustomTextField(
+              label: 'Password',
               controller: _passwordController,
-              decoration: const InputDecoration(
-                labelText: 'Password',
-                border: OutlineInputBorder(),
-              ),
+              keyboardType: TextInputType.visiblePassword,
               obscureText: true,
             ),
-            const SizedBox(height: 30),
+            SizedBox(height: 10),
+            Align(
+              alignment: AlignmentGeometry.center,
+              child: TextWithButton(
+                text: 'Already have an account? ',
+                tfontSize: 14,
+                t2fontSize: 16,
+                buttonText: 'Login',
+                onPressed: () {
+                  context.go(Routes.login);
+                },
+              ),
+            ),
+            const SizedBox(height: 20),
             ElevatedButton(
               onPressed: isLoading ? null : loginUser,
               style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
+                backgroundColor: Colors.brown,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(5),
                 ),
+                minimumSize: const Size(double.infinity, 50),
+                elevation: 0,
               ),
               child: isLoading
                   ? const SizedBox(
@@ -122,6 +147,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
+                        color: Colors.white,
                       ),
                     ),
             ),
